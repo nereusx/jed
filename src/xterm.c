@@ -88,6 +88,8 @@
 # define USE_XUTF8_CODE		0
 #endif
 
+extern int cbrief_flags; /* ndc: cursor style */
+
 /*{{{ Static Global Variables */
 
 static int JX_Screen_Cols;
@@ -703,10 +705,39 @@ static void show_cursor (void) /*{{{*/
 	     gcv.background = gc_info->bg;
 	     XChangeGC(This_XDisplay, gc, GCForeground | GCBackground, &gcv);
 	  }
-	if (smg_read_at(row, col, &sc, 1) == 0)
-	  SLSMGCHAR_SET_CHAR(sc, ' ');
-	SLSMGCHAR_SET_COLOR(sc, color);
-	JX_write_smgchar(row, col, &sc);
+	/* ndc: cursor style - begin */
+	if ( cbrief_flags & 0x01 ) {
+		int sy = 0;
+		XSetFunction(This_XDisplay, gc, GXinvert);
+		if ((CBuf != NULL) && (CBuf->flags & OVERWRITE_MODE)) {
+			/* actually overwrite cursor was the block-cursor,
+			 * insert mode was used the undrline.
+			 * and half block for empty characters (beyond EOL)
+			 * 
+			 * this is no so visible in X especially without blinkin,
+			 * so block is insert-mode, and half block is overwrite.  */
+
+			sy = XWin->font_height - XWin->font_height/3;
+			if ( sy < 2 ) sy = 2;
+			}
+		XFillRectangle(This_XDisplay, This_XWindow,
+			       gc,
+			       col * XWin->font_width + b,
+			       row * XWin->font_height + b + sy,
+			       XWin->font_width,
+			       XWin->font_height - sy);
+		XSetFunction(This_XDisplay, gc, GXcopy);
+		}
+	else {
+		/* JED's colored cursor */
+	/* ndc: cursor style - end */
+		if (smg_read_at(row, col, &sc, 1) == 0)
+		  SLSMGCHAR_SET_CHAR(sc, ' ');
+		SLSMGCHAR_SET_COLOR(sc, color);
+		JX_write_smgchar(row, col, &sc);
+	/* ndc: cursor style - begin */
+		}
+	/* ndc: cursor style - end */
      }
    else
      {
