@@ -1059,6 +1059,8 @@ static SLang_Intrin_Var_Type Jed_Variables [] =
    MAKE_VARIABLE(NULL, NULL, 0, 0)
 };
 
+int cbrief_slang_init(); /* ndc: cbrief.c module */
+
 int init_jed_intrinsics (void) /*{{{*/
 {
    if ((-1 == SLadd_intrin_fun_table (Jed_Intrinsics, NULL))
@@ -1121,6 +1123,7 @@ int init_jed_intrinsics (void) /*{{{*/
    SLdefine_for_ifdef("HAS_BLOCAL_VAR");
 #endif
 
+	if ( !cbrief_slang_init() ) return -1;
    if (SLang_get_error ()) return -1;
 
    return 0;

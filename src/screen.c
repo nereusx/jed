@@ -95,6 +95,12 @@ static int Absolute_Column;
 static int Point_Cursor_Flag = 1;      /* if non-zero, point cursor */
 int Jed_Display_Initialized;
 
+extern int cbrief_flags;						/* ndc: cbrief flags */
+extern int cbrief_select_column_pos;			/* ndc: column selection mode, first selected column */
+#define IS_INCL_SELMODE (cbrief_flags & 0x02)	/* ndc: this for inclusive selection */
+#define IS_LINE_SELMODE (cbrief_flags & 0x04)	/* ndc: this is for line-selection mode */
+#define IS_COLM_SELMODE (cbrief_flags & 0x08)	/* ndc: this is for column-selection mode */
+
 static Line Eob_Line =
 {
    NULL, NULL, (unsigned char *) "[EOB]", 5
@@ -182,6 +188,13 @@ static void display_line (Line *line, int sy, int sx)
      }
 #endif
 
+	/* ndc: line selection mode -- begin */
+	if ( IS_LINE_SELMODE && (s->hi0 != NULL) && Wants_Attributes ) {
+		SLsmg_set_color(JREGION_COLOR);
+		color_set = 1;
+		}
+	/* ndc: line selection mode -- end */
+
 #if JED_HAS_LINE_MARKS
    line_marks = CBuf->user_marks;
    if (color_set == 0) while (line_marks != NULL)
@@ -196,6 +209,13 @@ static void display_line (Line *line, int sy, int sx)
 	line_marks = line_marks->next;
      }
 #endif
+
+ 	/* ndc: line selection mode -- begin */
+ 	if ( IS_LINE_SELMODE && (s->hi0 != NULL) && Wants_Attributes ) {
+ 		SLsmg_set_color(JREGION_COLOR);
+ 		color_set = 1;
+ 		}
+ 	/* ndc: line selection mode -- end */
 
    if (len)
      {
@@ -264,6 +284,26 @@ static void display_line (Line *line, int sy, int sx)
 	  }
      }
 
+ 	/* ndc: column selection -- begin */
+ 	if ( IS_COLM_SELMODE && s->hi0 != NULL && Wants_Attributes) {
+ 		int c = calculate_column() - 1; /* where is the pointer now */
+ 		int sel = cbrief_select_column_pos - 1;
+ 		if ( c > sel || (IS_INCL_SELMODE && c == sel) ) {
+ 			if ( IS_INCL_SELMODE )
+ 				SLsmg_set_color_in_region(JREGION_COLOR, sy, sel, 1, (c - sel) + 1);
+ 			else
+ 				SLsmg_set_color_in_region(JREGION_COLOR, sy, sel, 1, (c - sel));
+ 			}
+ 		else if ( c < sel ) {
+ 			if ( IS_INCL_SELMODE )
+ 				SLsmg_set_color_in_region(JREGION_COLOR, sy, c, 1, (sel - c) + 1);
+ 			else
+ 				SLsmg_set_color_in_region(JREGION_COLOR, sy, c + 1, 1, (sel - c));
+ 			}
+ 		}
+ 	else {
+ 	/* ndc: column selection -- end */
+
    if ((s->hi0 != NULL) && Wants_Attributes)
      {
 	int c;
@@ -272,16 +312,23 @@ static void display_line (Line *line, int sy, int sx)
 	if (len && (s->hi0[len - 1] == '\n'))
 	  len--;
 
-	if (len)
+ 	if ( len
+ 		 || (IS_INCL_SELMODE && s->hi0 == s->hi1) )	/* ndc: inclusive selection #1 */
 	  {
 	     c = jed_compute_effective_length (line->data, s->hi0);
 	     if (is_mini)
 	       c += Mini_Info.effective_prompt_len;
 	     SLsmg_gotorc (sy, c);
 	     SLsmg_set_color (JREGION_COLOR);
-	     SLsmg_write_nchars ((char *)s->hi0, len);
+ 			if ( IS_INCL_SELMODE )		  /* ndc: inclusive selection #2 */
+ 				SLsmg_write_nchars ((char *)s->hi0, len + 1);
+ 			else
+ 				SLsmg_write_nchars ((char *)s->hi0, len);
 	  }
      }
+	/* ndc: column selection -- begin */
+	}
+	/* ndc: column selection -- end */
 
    /* if (hscroll_col + sx) */
    SLsmg_set_screen_start (NULL, NULL);
@@ -1442,8 +1489,16 @@ static void do_dialog(char *b)
 	SLsmg_set_color (JERROR_COLOR);
 	touch_screen();
      }
-   else
-     SLsmg_set_color (JMESSAGE_COLOR);
+   else {
+	/* ndc: add color support -- begin */
+		if ( *b == '\e' && *(b+1) == 'c' ) {
+			SLsmg_set_color(*(b+2) - 1);
+			b += 3;
+			}
+		else
+		 /* ndc: add color support -- end */
+	     SLsmg_set_color (JMESSAGE_COLOR);
+	}
 
    SLsmg_Newline_Behavior = SLSMG_NEWLINE_PRINTABLE;
    SLsmg_gotorc (Jed_Num_Screen_Rows - 1, 0);

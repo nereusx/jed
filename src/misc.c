@@ -611,6 +611,38 @@ void get_last_macro () /*{{{*/
    SLang_push_string ((char *)buf);
 }
 
+/* ndc: set_last_macro() -- begin */
+void set_last_macro(char *str)
+{
+	unsigned char *m, *mmax, *s;
+
+	if ( Defining_Keyboard_Macro ) {
+		msg_error("Complete Macro first!");
+		return;
+		}
+
+	Macro_Ptr_Max = Macro_Buffer_Ptr = Macro_Buffer;
+	mmax = m = Macro_Buffer;
+	mmax += JED_KBD_MACRO_SIZE;
+	s = str;
+	while ( *s != '\0' && m < mmax )  {
+		switch ( *s ) {
+		case '^': /* control keys */
+			s ++;
+			*m ++ = ( *s == '?' ) ? 127 : *s - '@';
+			if ( *s ) s ++;
+			break;
+		case '\\': /* ^ or \ */
+			s ++;
+			if ( *s == '\0' ) break;
+		default:
+			*m ++ = *s ++;
+			}
+		}
+	Macro_Ptr_Max = m;
+}
+/* ndc: set_last_macro() -- end */
+
 /*}}}*/
 
 char *safe_strcpy (char *a, SLFUTURE_CONST char *b, unsigned int n) /*{{{*/

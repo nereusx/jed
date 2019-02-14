@@ -1,26 +1,26 @@
 # -*- sh -*-
 
 # C compiler and C flags
-CC = @CC@
-CFLAGS = @CFLAGS@ @CPPFLAGS@ @X_CFLAGS@ @SLANG_DLL_CFLAGS@
-LDFLAGS = @LDFLAGS@ @DYNAMIC_LINK_FLAGS@
+CC = gcc
+CFLAGS = -g -O2   -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16 
+LDFLAGS =  -Wl,-export-dynamic
 
 #---------------------------------------------------------------------------
 # Installation information.  All jed library files will be placed under
 # $JED_ROOT.  /usr/local/jed is a good choice.  For a private installation,
 # use, e.g., $(HOME)/src/jed
 #---------------------------------------------------------------------------
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-datarootdir = @datarootdir@
+prefix = /usr
+exec_prefix = ${prefix}
+datarootdir = ${prefix}/share
 #JED_ROOT = $(HOME)/src/jed# <--- make sure # is at end of file!!
 #JED_ROOT = $(prefix)/jed# <--- make sure # is at end of file!!
-JED_ROOT = @JED_ROOT@# <--- make sure # is at end of file!!
-BIN_DIR = @bindir@
-MAN_DIR = @mandir@/man1
-INFO_DIR = @infodir@
-INSTALL		= @INSTALL@
-INSTALL_DATA	= @INSTALL_DATA@
+JED_ROOT = /usr/jed# <--- make sure # is at end of file!!
+BIN_DIR = ${exec_prefix}/bin
+MAN_DIR = ${datarootdir}/man/man1
+INFO_DIR = ${datarootdir}/info
+INSTALL		= /usr/bin/install -c
+INSTALL_DATA	= ${INSTALL} -m 644
 MKINSDIR = ../autoconf/mkinsdir.sh
 JED_LIB_FILES = ../lib/*.sl ../lib/*.dat ../lib/*.hlp ../lib/jed.rc
 JED_DOC_FILES = ../doc/README
@@ -45,53 +45,53 @@ DEST_JED_ROOT = $(DESTDIR)$(JED_ROOT)
 # Location of jed source code 
 #---------------------------------------------------------------------------
 # Location of jed source code (absolute path)
-SRCDIR = @SRCDIR@
+SRCDIR = /root/src/jed-brief/src
 
 # Location of compiled object code (absolute path)
-OBJDIR = @OBJDIR@
+OBJDIR = /root/src/jed-brief/src/$(ARCH)objs
 
 #---------------------------------------------------------------------------
 # Special features (See also features.h)
 #---------------------------------------------------------------------------
 # 1. Linux GPM Mouse support
-MOUSEDEFINES = @MOUSEDEFINES@
-MOUSELIB = @MOUSELIB@
-MOUSE_O_FILE = @MOUSE_O_FILE@
-MOUSE_OBJ_FILE = @MOUSE_OBJ_FILE@
+MOUSEDEFINES = -DUSE_GPM_MOUSE
+MOUSELIB = -lgpm
+MOUSE_O_FILE = gpmmouse.o
+MOUSE_OBJ_FILE = ${OBJDIR}/gpmmouse.o
 
 # 2. XFree86 XRENDERFONT (Anti-aliased font) support for XJED
 #XRENDERFONTLIBS = -lXft -lXrender -lfreetype -lXext
-XRENDERFONTLIBS = @XRENDERFONTLIBS@
+XRENDERFONTLIBS = -lXft
 
 #---------------------------------------------------------------------------
 # S-Lang library location
 #---------------------------------------------------------------------------
 # -L + Location of libslang.a 
-SLANG_LIB = @SLANG_LIB@
-RPATH	  = @RPATH@
+SLANG_LIB = 
+RPATH	  = 
 # -I + Location of slang.h
-SLANG_INC = @SLANG_INC@
+SLANG_INC = 
 
 #---------------------------------------------------------------------------
 # X and Miscellaneous libraries
 #---------------------------------------------------------------------------
 # Some systems need -ltermcap (NeXT)
-TERMCAP_LIB = @TERMCAP@
+TERMCAP_LIB = 
 
 # X library location
-XLIBDIR = @X_LIBS@
+XLIBDIR = 
 
 # X Include directory
-XINCLUDE = @X_CFLAGS@
+XINCLUDE =  -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16
 
 # Extra libraries needed by X and Network support on some systems
-X_XTRA_LIBS = @X_EXTRA_LIBS@
+X_XTRA_LIBS = 
 
 # Libraries to support dynamic linking
-DL_LIB		= @DYNAMIC_LINK_LIB@
+DL_LIB		= -ldl
 
 # Anything else???
-OTHERLIBS = @LIBS@ -lm
+OTHERLIBS = -lutil  -lm
 
 #---------------------------------------------------------------------------
 # There should be no need to modify anything below here.
@@ -139,9 +139,9 @@ XJED_LIBS = $(XLIB) $(XRENDERFONTLIBS)
 
 GTKJED_OFILES = vterm.o gtkmenu.o gtkwin.o gtkterm.o
 GTKJED_OBJS = $(OBJDIR)/vterm.o $(OBJDIR)/gtkmenu.o $(OBJDIR)/gtkwin.o $(OBJDIR)/gtkterm.o
-GTKJED_LIBS = @GTK_LIBS@ $(XRENDERFONTLIBS)
-GTKJED_CFLAGS = @GTK_CFLAGS@
-BUILD_GTKJED = @BUILD_GTKJED@
+GTKJED_LIBS = -lgtk-x11-2.0 -lgdk-x11-2.0 -lpangocairo-1.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lfontconfig -lfreetype $(XRENDERFONTLIBS)
+GTKJED_CFLAGS = -pthread -I/usr/include/gtk-2.0 -I/usr/lib/x86_64-linux-gnu/gtk-2.0/include -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/fribidi -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16
+BUILD_GTKJED = yes
 
 UPDATE_VERSION_SCRIPT = $(HOME)/bin/update_changes_version
 
