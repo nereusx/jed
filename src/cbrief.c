@@ -65,7 +65,7 @@
  */
 int cbrief_flags = 0;					/* ndc: just an integer to pass parameters */
 int cbrief_select_column_pos = 1;		/* ndc: column selection mode, column begins */
-int cbrief_api_ver = 2;					/* ndc: cbrief module version */
+int cbrief_api_ver = 3;					/* ndc: cbrief module version */
 extern void set_last_macro(char *);		/* ndc: copies a keystroke string to macro buffer (misc.c) */
 
 // The abort() primitive immediately exits GriefEdit.
