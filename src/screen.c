@@ -781,7 +781,7 @@ static void finish_status(int col_flag)
 	char *v0 = v;
 	unsigned int uvalue;
 	int value, val_mult;
-	int is_num;
+	int is_num, zero_flag;
 
 	strcpy (int_format, "%d");
 	strcpy (uint_format, "%u");
@@ -825,6 +825,7 @@ static void finish_status(int col_flag)
 	* a formatting prefix value, or a color specifier
 	*/
 	value = 0;
+	zero_flag = (ch == '0');
 	while (isdigit(ch))
 	  {
 	     value = 10*value + (ch - '0');
@@ -844,9 +845,9 @@ static void finish_status(int col_flag)
 	  {
 	     value = val_mult*value;
 
-	     if (-1 == SLsnprintf (int_format, sizeof(int_format), "%%%dd", value))
+		  if (-1 == SLsnprintf (int_format, sizeof(int_format), "%%%s%dd", ((zero_flag)?"0":""), value))
 	       strcpy (int_format, "%d");
-	     if (-1 == SLsnprintf (uint_format, sizeof(int_format), "%%%du", value))
+	     if (-1 == SLsnprintf (uint_format, sizeof(int_format), "%%%s%du", ((zero_flag)?"0":""), value))
 	       strcpy (uint_format, "%u");
 	     if (-1 == SLsnprintf (str_format, sizeof(str_format), "%%%ds", value))
 	       strcpy (str_format, "%s");
