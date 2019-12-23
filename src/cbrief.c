@@ -74,14 +74,38 @@ void cbm_abort()
 	abort();
 }
 
+// try to save screen to run terminal command that may or may not uses curses
 void cbm_save_screen()
 {
 	SLsmg_suspend_smg();
+//	SLsmg_cls();
 }
 
+// restore screen from previous save_screen
 void cbm_restore_screen()
 {
 	SLsmg_resume_smg();
+	jed_redraw_screen(0);
+}
+
+//
+void cbm_redraw()
+{
+	jed_redraw_screen(1);
+}
+
+int cbm_scr_width()
+{
+	int r, c;
+	jed_get_screen_size(&r, &c);
+	return c;
+}
+
+int cbm_scr_height()
+{
+	int r, c;
+	jed_get_screen_size(&r, &c);
+	return r;
 }
 
 // the inq_debug() primitive returns an integer representing the debug flags which are currently in effect
@@ -97,6 +121,10 @@ static SLang_Intrin_Fun_Type CBRIEF_Intrinsics [] = {
 	MAKE_INTRINSIC_0("inq_debug", cbm_inq_debug, INT_TYPE),
 	MAKE_INTRINSIC_0("save_screen", cbm_save_screen, VOID_TYPE),
 	MAKE_INTRINSIC_0("restore_screen", cbm_restore_screen, VOID_TYPE),
+	MAKE_INTRINSIC_0("redraw_screen", cbm_redraw, VOID_TYPE),
+	MAKE_INTRINSIC_0("touch_screen", touch_screen, VOID_TYPE),
+	MAKE_INTRINSIC_0("screen_width", cbm_scr_width, INT_TYPE),
+	MAKE_INTRINSIC_0("screen_height", cbm_scr_height, INT_TYPE),
 	SLANG_END_INTRIN_FUN_TABLE
 	};
 
