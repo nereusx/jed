@@ -2314,6 +2314,7 @@ static int open_Xdisplay (void) /*{{{*/
      return 0;
 
    XSetErrorHandler (x_err_handler);
+
    return 1;
 }
 

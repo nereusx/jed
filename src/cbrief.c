@@ -65,13 +65,23 @@
  */
 int cbrief_flags = 0;					/* ndc: just an integer to pass parameters */
 int cbrief_select_column_pos = 1;		/* ndc: column selection mode, column begins */
-int cbrief_api_ver = 3;					/* ndc: cbrief module version */
+int cbrief_api_ver = 4;					/* ndc: cbrief module version */
 extern void set_last_macro(char *);		/* ndc: copies a keystroke string to macro buffer (misc.c) */
 
 // The abort() primitive immediately exits GriefEdit.
 void cbm_abort()
 {
 	abort();
+}
+
+void cbm_save_screen()
+{
+	SLsmg_suspend_smg();
+}
+
+void cbm_restore_screen()
+{
+	SLsmg_resume_smg();
 }
 
 // the inq_debug() primitive returns an integer representing the debug flags which are currently in effect
@@ -85,6 +95,8 @@ static SLang_Intrin_Fun_Type CBRIEF_Intrinsics [] = {
 	MAKE_INTRINSIC_S("set_last_macro", set_last_macro, VOID_TYPE),
 	MAKE_INTRINSIC_0("abort", cbm_abort, VOID_TYPE),
 	MAKE_INTRINSIC_0("inq_debug", cbm_inq_debug, INT_TYPE),
+	MAKE_INTRINSIC_0("save_screen", cbm_save_screen, VOID_TYPE),
+	MAKE_INTRINSIC_0("restore_screen", cbm_restore_screen, VOID_TYPE),
 	SLANG_END_INTRIN_FUN_TABLE
 	};
 

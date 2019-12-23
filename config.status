@@ -433,9 +433,9 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/root/src/jed'
+ac_pwd='/usr/src/jed'
 srcdir='.'
-INSTALL='/bin/install -c'
+INSTALL='/usr/bin/install -c'
 test -n "$AWK" || AWK=awk
 # The default lists apply if the user does not specify any file.
 ac_need_defaults=:
@@ -605,14 +605,17 @@ cat >>"$ac_tmp/subs1.awk" <<\_ACAWK &&
 S["LTLIBOBJS"]=""
 S["LIBOBJS"]=""
 S["JED_ROOT"]="/usr/jed"
-S["BUILD_GTKJED"]="no"
-S["GTK_LIBS"]=""
-S["GTK_CFLAGS"]=""
+S["BUILD_GTKJED"]="yes"
+S["GTK_LIBS"]="-lgtk-x11-2.0 -lgdk-x11-2.0 -lpangocairo-1.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lfont"\
+"config -lfreetype"
+S["GTK_CFLAGS"]="-pthread -I/usr/include/gtk-2.0 -I/usr/lib/gtk-2.0/include -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixma"\
+"n-1 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango"\
+"-1.0 -I/usr/include/fribidi -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16"
 S["MOUSE_OBJ_FILE"]=""
 S["MOUSE_O_FILE"]=""
 S["MOUSEDEFINES"]=""
 S["MOUSELIB"]=""
-S["PKGCONFIG"]="/sbin/pkg-config"
+S["PKGCONFIG"]="/usr/bin/pkg-config"
 S["XRENDERFONTLIBS"]="-lXft"
 S["SLANG_INC_DIR"]="/usr/include"
 S["SLANG_LIB_DIR"]="/usr/lib"
@@ -620,16 +623,16 @@ S["SLANG_INC"]=""
 S["SLANG_LIB"]=""
 S["MISC_TERMINFO_DIRS"]="/usr/share/terminfo"
 S["TERMCAP"]=""
-S["nc5config"]="/sbin/ncurses5-config"
-S["ELFDIR"]="/root/src/jed/src/$(ARCH)elfobjs"
-S["OBJDIR"]="/root/src/jed/src/$(ARCH)objs"
-S["SRCDIR"]="/root/src/jed/src"
+S["nc5config"]="/usr/bin/ncurses5-config"
+S["ELFDIR"]="/usr/src/jed/src/$(ARCH)elfobjs"
+S["OBJDIR"]="/usr/src/jed/src/$(ARCH)objs"
+S["SRCDIR"]="/usr/src/jed/src"
 S["X_EXTRA_LIBS"]=""
 S["X_LIBS"]=""
-S["X_PRE_LIBS"]=""
+S["X_PRE_LIBS"]=" -lSM -lICE"
 S["X_CFLAGS"]=" -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16"
 S["XMKMF"]=""
-S["PKG_CONFIG"]="/sbin/pkg-config"
+S["PKG_CONFIG"]="/usr/bin/pkg-config"
 S["M_LIB"]="-lm"
 S["SLANG_DLL_CFLAGS"]=""
 S["ELFLIB_BUILD_NAME"]="$(ELFLIB_MAJOR_MINOR_MICRO)"
@@ -650,8 +653,8 @@ S["ELF_LINK"]="$(CC) $(LDFLAGS) -shared -Wl,-O1 -Wl,--version-script,$(VERSION_S
 S["ELF_CFLAGS"]="$(CFLAGS) -fPIC"
 S["ELF_CC"]="$(CC)"
 S["DYNAMIC_LINK_LIB"]="-ldl"
-S["EGREP"]="/sbin/grep -E"
-S["GREP"]="/sbin/grep"
+S["EGREP"]="/usr/bin/grep -E"
+S["GREP"]="/usr/bin/grep"
 S["CPP"]="gcc -E"
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
@@ -673,7 +676,7 @@ S["build_os"]="linux-gnu"
 S["build_vendor"]="unknown"
 S["build_cpu"]="x86_64"
 S["build"]="x86_64-unknown-linux-gnu"
-S["CONFIG_DIR"]="/root/src/jed"
+S["CONFIG_DIR"]="/usr/src/jed"
 S["target_alias"]=""
 S["host_alias"]=""
 S["build_alias"]=""
