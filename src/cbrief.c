@@ -323,6 +323,12 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	return rv;
 }
 
+// interface for SL
+static int cbm_msgbox_sl(char *msg, int flags)
+{
+	return cbm_msgbox(flags, "%s", msg);
+}
+
 // popup menu
 // returns the selected item or -1
 static int cbm_menu(char *source, int def)
@@ -469,6 +475,7 @@ static SLang_Intrin_Fun_Type CBRIEF_Intrinsics [] = {
 	MAKE_INTRINSIC_0("screen_width", cbm_scr_width, INT_TYPE),
 	MAKE_INTRINSIC_0("screen_height", cbm_scr_height, INT_TYPE),
 	MAKE_INTRINSIC_SI("popup_menu", cbm_menu, INT_TYPE),
+	MAKE_INTRINSIC_SI("msgbox", cbm_msgbox_sl, INT_TYPE),
 	SLANG_END_INTRIN_FUN_TABLE
 	};
 
