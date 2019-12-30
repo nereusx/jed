@@ -12,4 +12,10 @@
     <note priority="medium" time="1577729795">
         file-completion with popup_menu
     </note>
+    <note priority="medium" time="1577729873">
+        move parts of scripts into cbrief.c
+    </note>
+    <note priority="medium" time="1577729942">
+        fix copy/paste in X (now it is using xclip)
+    </note>
 </todo>
