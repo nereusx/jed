@@ -59,8 +59,8 @@
 
 #define BUFSZ		1024
 #define BIGBUFSZ	4096
-#define MIN(a,b) ((a<b)?a:b)
-#define MAX(a,b) ((a>b)?a:b)
+#define MIN(a,b) 	((a<b)?a:b)
+#define MAX(a,b) 	((a>b)?a:b)
 
 /* CBRIEF flags:
  * 0x01 = use reversed block for cursor. (visual only)
@@ -165,7 +165,7 @@ static SLang_Key_Type *cbrief_tui_getkey()
 	if ( ch == 27 ) {
 		int tsecs = 1;
 		if ( input_pending(&tsecs) == 0 )
-			ch = 127;
+			ungetkey(&ch); // second ESC
 		}
 	ungetkey(&ch);
 	return SLang_do_key(CBMenuKMap, jed_getkey);
@@ -307,9 +307,7 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	do {
 		switch ( cbm_getkey() ) {
 		case 0x0D: rv = 1; break;
-		case -1:
-		case 'q':
-		case 'Q':
+		case -1: case 'q': case 'Q':
 		case 0x1B: rv = 0; break;
 			}
 		} while ( rv == -1 );
@@ -334,7 +332,7 @@ static int cbm_msgbox_sl(char *msg, int flags)
 static int cbm_menu(char *source, int def)
 {
 	int 	count, maxc, start_pos = 0, selected = 0;
-	int 	i, rows, cols;
+	int 	i, rows, cols, loop_exit;
 	int		menu_x, menu_y, menu_w, menu_h, menu_items;
 	char	*spacer;
 	char	**list, *elem, *ps, *p;
@@ -390,7 +388,8 @@ static int cbm_menu(char *source, int def)
 	start_pos = 0;
 	SLsmg_set_color(0);
 	SLsmg_draw_box(menu_y - 1, menu_x - 2, menu_h + 2, menu_w + 4);
-	do {
+	loop_exit = 0;
+	while ( loop_exit == 0 ) {
 		// draw menu
 //		cbm_msgbox(0, "count=%d, start_pos=%d, selected=%d", count, start_pos, selected);
 		SLsmg_set_color(0);
@@ -443,17 +442,15 @@ static int cbm_menu(char *source, int def)
 				start_pos = selected - menu_items;
 			break;
 		case 0x0D:
- 			goto smenu_exit;
-		case 0x1B:
-		case -1:
-		case 'q':
-		case 'Q':
+ 			loop_exit ++;
+			break;
+		case 0x1B: case -1: case 'q': case 'Q':
 			selected = -1;
-			goto smenu_exit;
+			loop_exit ++;
+			break;
 			}
-		} while ( 1 );
+		} // while
 
-smenu_exit:
 	free(spacer);
 	for ( i = 0; i < count; i ++ )
 		free(list[i]);

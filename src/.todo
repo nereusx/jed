@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<todo version="0.1.20">
+    <note priority="medium" time="1577729725">
+        history on search, translate and command-line
+    </note>
+    <note priority="medium" time="1577729764">
+        screen region update
+    </note>
+    <note priority="medium" time="1577729780">
+        line-selection in C
+    </note>
+    <note priority="medium" time="1577729795">
+        file-completion with popup_menu
+    </note>
+</todo>
