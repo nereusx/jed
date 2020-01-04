@@ -70,7 +70,7 @@
  */
 int cbrief_flags = 0;					/* ndc: just an integer to pass parameters */
 int cbrief_select_column_pos = 1;		/* ndc: column selection mode, column begins */
-int cbrief_api_ver = 4;					/* ndc: cbrief module version */
+int cbrief_api_ver = 5;					/* ndc: cbrief module version */
 extern void set_last_macro(char *);		/* ndc: copies a keystroke string to macro buffer (misc.c) */
 
 /*
@@ -84,7 +84,7 @@ static int cbrief_init_menu_keymap()
 	int ch;
 	unsigned char simple[3];
 
-	if ( (CBMenuKMap = SLang_create_keymap ("cbmp", NULL)) == NULL )
+	if ( (CBMenuKMap = SLang_create_keymap ("cbriefpopup", NULL)) == NULL )
 		return -1;
 	CBMenuKMap->functions = NULL; // CBMenuKMapFuncs;
 	simple[2] = '\0';
@@ -285,21 +285,21 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	x = cols / 2 - w / 2;
 
 	//
-	spacer = (char *) malloc(w+1);
-	for ( i = 0; i < w; i ++ )
-		spacer[i] = ' ';
-	spacer[w] = '\0';
+	spacer = (char *) malloc(w+4);
+	memset(spacer, ' ', w+2);
+	spacer[w+3] = '\0';
 
-	SLsmg_set_color(0);
+	SLsmg_set_color(JMENU_POPUP_COLOR);
 	SLsmg_draw_box(y - 1, x - 2, h + 2, w + 4);
 	for ( i = 0; i < h; i ++ ) {
-		SLsmg_gotorc(y + i, x);
-		SLsmg_write_nstring(spacer, w);
+		SLsmg_gotorc(y + i, x - 1);
+		SLsmg_write_nstring(spacer, w + 2);
 		}
 	for ( i = 0; i < count && i < h; i ++ ) {
 		SLsmg_gotorc(y + i, x);
 		SLsmg_write_nstring(list[i], w);
 		}
+	SLsmg_set_color(JNORMAL_COLOR);
 	SLsmg_refresh();
 
 	// input
@@ -321,22 +321,20 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	return rv;
 }
 
-// interface for SL
-static int cbm_msgbox_sl(char *msg, int flags)
-{
-	return cbm_msgbox(flags, "%s", msg);
-}
+// interface for S-Lang
+static int cbm_msgbox_sl(char *msg, int *flags)
+{ return cbm_msgbox(*flags, "%s", msg); }
 
 // popup menu
 // returns the selected item or -1
-static int cbm_menu(char *source, int def)
+static int cbm_popup_menu(const char *source, int defsel)
 {
 	int 	count, maxc, start_pos = 0, selected = 0;
 	int 	i, rows, cols, loop_exit;
 	int		menu_x, menu_y, menu_w, menu_h, menu_items;
 	char	*spacer;
-	char	**list, *elem, *ps, *p;
-	SLang_Key_Type *key;
+	char	**list, *elem;
+	const char *ps, *p;
 
 	// create an array of options (break source at \n)
 	list = (char **) malloc(sizeof(char *) * (128 + 1));
@@ -369,39 +367,40 @@ static int cbm_menu(char *source, int def)
 	menu_w = MIN(maxc,  cols - 8);
 	menu_h = MIN(count, rows - 6);
 	menu_x = cols / 2 - menu_w / 2;
-	menu_y = (rows - menu_h) - 2;
+//	menu_y = (rows - menu_h) - 2;
+	menu_y = ((rows - menu_h) - 2) / 2;
 	menu_items = menu_h;
 
 	//
-	spacer = (char *) malloc(menu_w + 3);
-	for ( i = 0; i < menu_w + 2; i ++ )
-		spacer[i] = ' ';
-	spacer[menu_w + 2] = '\0';
-	if ( def > 0 && def < count ) {
-		selected = def;
-		if ( selected > menu_items )
-			start_pos = selected - menu_items;
-		}
+	spacer = (char *) malloc(menu_w + 5);
+	memset(spacer, ' ', menu_w + 4);
+	spacer[menu_w + 4] = '\0';
 
 	// menu loop
-	selected = 0;
+	selected  = 0;
 	start_pos = 0;
-	SLsmg_set_color(0);
+	if ( defsel > 0 && defsel < count ) {
+		selected = defsel;
+		if ( selected > start_pos + menu_items )
+			start_pos = selected - menu_items;
+		}
+	SLsmg_set_color(JMENU_POPUP_COLOR);
 	SLsmg_draw_box(menu_y - 1, menu_x - 2, menu_h + 2, menu_w + 4);
 	loop_exit = 0;
 	while ( loop_exit == 0 ) {
 		// draw menu
-//		cbm_msgbox(0, "count=%d, start_pos=%d, selected=%d", count, start_pos, selected);
-		SLsmg_set_color(0);
 		for ( i = 0; i < menu_items; i ++ ) {
 			SLsmg_gotorc(menu_y + i, menu_x - 1);
-			SLsmg_set_color((i + start_pos == selected ) ? 1 : 0);
+			if ( i + start_pos == selected )
+				SLsmg_set_color(JMENU_SELECTION_COLOR);
+			else
+				SLsmg_set_color(JMENU_POPUP_COLOR);
 			SLsmg_write_nstring(spacer, menu_w + 2);
 			SLsmg_gotorc(menu_y + i, menu_x);
 			if ( start_pos + i < count )
 				SLsmg_write_nstring(list[start_pos + i], menu_w);
 			}
-		SLsmg_set_color(0);
+		SLsmg_set_color(JNORMAL_COLOR);
  		SLsmg_refresh();
 
 		// get key
@@ -458,6 +457,10 @@ static int cbm_menu(char *source, int def)
 	return selected;
 }
 
+// interface for S-Lang
+static int cbm_popup_menu_sl(const char *source, int *defsel)
+{ return cbm_popup_menu(source, *defsel); }
+
 /*
  * setup S-Lang interface
  */
@@ -471,8 +474,9 @@ static SLang_Intrin_Fun_Type CBRIEF_Intrinsics [] = {
 	MAKE_INTRINSIC_0("touch_screen", touch_screen, VOID_TYPE),
 	MAKE_INTRINSIC_0("screen_width", cbm_scr_width, INT_TYPE),
 	MAKE_INTRINSIC_0("screen_height", cbm_scr_height, INT_TYPE),
-	MAKE_INTRINSIC_SI("popup_menu", cbm_menu, INT_TYPE),
-	MAKE_INTRINSIC_SI("msgbox", cbm_msgbox_sl, INT_TYPE),
+	MAKE_INTRINSIC_0("cgetkey",     cbm_getkey,        INT_TYPE),
+	MAKE_INTRINSIC_SI("popup_menu", cbm_popup_menu_sl, INT_TYPE),
+	MAKE_INTRINSIC_SI("msgbox",     cbm_msgbox_sl,     INT_TYPE),
 	SLANG_END_INTRIN_FUN_TABLE
 	};
 
@@ -492,5 +496,6 @@ int cbrief_slang_init()
 	if ( SLadd_intrin_var_table(CBRIEF_Variables,  NULL) == -1 )	return 0;
 	if ( cbrief_init_menu_keymap() == -1 )                          return 0;
 	SLdefine_for_ifdef("CBRIEF_PATCH_V1"); /* ndc: statusline fmt, line/incl sel mode, x11 rev. cursor, set_last_macro()  */
+	SLdefine_for_ifdef("CBRIEF_PATCH_V5"); /* ndc: tui */
 	return 1;
 }
