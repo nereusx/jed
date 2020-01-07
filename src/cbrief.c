@@ -238,11 +238,10 @@ int cbm_inq_debug()
 }
 
 // msgbox
-static int cbm_msgbox(int flags, const char *fmt, ...)
+static int cbm_msgbox(int flags, const char *title, const char *fmt, ...)
 {
 	char	*msg = (char *) malloc(BUFSZ);
-	char	*spacer;
-	int		rows, cols, x, y, w, h, i, count, maxc, rv;
+	int		rows, cols, x, y, w, h, i, count, maxc, rv, alloc;
 	char	**list, *elem, *ps, *p;
 	va_list ap;
 
@@ -251,7 +250,8 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	va_end(ap);
 
 	// create an array of options (break source at \n)
-	list = (char **) malloc(sizeof(char *) * 128);
+	alloc = 128;
+	list = (char **) malloc(sizeof(char *) * (alloc + 1));
 	count = 0;
 	ps = p = msg;
 	while ( *p ) {
@@ -261,8 +261,10 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 			elem[p - ps] = '\0';
 			list[count] = elem;
 			count ++;
-			if ( count > 127 )
-				break;
+			if ( count == alloc ) {
+				alloc += 128;
+				list = (char **) realloc(list, sizeof(char *) * (alloc + 1));
+				}
 			ps = p + 1;
 			}
 		p ++;
@@ -274,6 +276,10 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 
 	// calculate the size and the width
 	maxc = 0;
+	if ( title ) {
+		if ( *title )
+			maxc = strlen(title) + 2;
+		}
 	for ( i = 0; i < count; i ++ )
 		maxc = MAX(maxc, strlen(list[i]));
 
@@ -284,36 +290,40 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 	y = rows / 2 - h / 2;
 	x = cols / 2 - w / 2;
 
-	//
-	spacer = (char *) malloc(w+4);
-	memset(spacer, ' ', w+2);
-	spacer[w+3] = '\0';
-
-	SLsmg_set_color(JMENU_POPUP_COLOR);
-	SLsmg_draw_box(y - 1, x - 2, h + 2, w + 4);
-	for ( i = 0; i < h; i ++ ) {
-		SLsmg_gotorc(y + i, x - 1);
-		SLsmg_write_nstring(spacer, w + 2);
-		}
-	for ( i = 0; i < count && i < h; i ++ ) {
-		SLsmg_gotorc(y + i, x);
-		SLsmg_write_nstring(list[i], w);
-		}
-	SLsmg_set_color(JNORMAL_COLOR);
-	SLsmg_refresh();
-
-	// input
 	rv = -1;
 	do {
+		// draw the whole box
+		SLsmg_set_color(JMENU_POPUP_COLOR);
+		SLsmg_draw_box(y - 1, x - 2, h + 2, w + 4);
+		if ( title ) {
+			if ( *title ) {
+				SLsmg_draw_object(y - 1, x, SLSMG_RTEE_CHAR);
+				SLsmg_gotorc(y - 1, x + 1);
+				SLsmg_write_string((char *) title);
+				SLsmg_draw_object(y - 1, x + strlen(title) + 1, SLSMG_LTEE_CHAR);
+				}
+			}
+		for ( i = 0; i < h; i ++ ) {
+			SLsmg_gotorc(y + i, x - 1);
+			SLsmg_write_nstring(NULL, w + 2);
+			}
+		for ( i = 0; i < count && i < h; i ++ ) {
+			SLsmg_gotorc(y + i, x);
+			SLsmg_write_nstring(list[i], w);
+			}
+		SLsmg_set_color(JNORMAL_COLOR);
+		SLsmg_refresh();
+
+		// input
 		switch ( cbm_getkey() ) {
 		case 0x0D: rv = 1; break;
 		case -1: case 'q': case 'Q':
 		case 0x1B: rv = 0; break;
 			}
 		} while ( rv == -1 );
+	cbm_redraw();
 
 	// clean up
-	free(spacer);
 	for ( i = 0; i < count; i ++ )
 		free(list[i]);
 	free(list);
@@ -322,24 +332,34 @@ static int cbm_msgbox(int flags, const char *fmt, ...)
 }
 
 // interface for S-Lang
-static int cbm_msgbox_sl(char *msg, int *flags)
-{ return cbm_msgbox(*flags, "%s", msg); }
+static int cbm_msgbox_sl(const char *title, const char *msg, int *flags)
+{ return cbm_msgbox(*flags, title, "%s", msg); }
 
 // popup menu
 // the 'source' is the list of items separated by '\n'
 // the 'defsel' is the preselected item (default is 0)
 // returns the index of the selected item or -1 for cancel
-static int cbm_popup_menu(const char *source, int defsel)
+// flags 0x00 = normal
+//       0x01 = allow delete item
+
+#define PUM_FIX_SCROLL() {\
+		if ( selected >= count ) selected = count - 1;\
+		if ( selected >= start_pos + menu_items ) start_pos = (selected+1) - menu_items;\
+		}
+
+static int cbm_popup_menu(int flags, const char *source, int defsel,
+				const char *title, const char *footer,
+				int (*hook)(const char*,int,int,int), const char *hookpar)
 {
-	int 	count, maxc, start_pos = 0, selected = 0;
-	int 	i, rows, cols, loop_exit;
+	int 	count, alloc, maxc, start_pos = 0, selected = 0;
+	int 	i, rows, cols, loop_exit, key;
 	int		menu_x, menu_y, menu_w, menu_h, menu_items;
-	char	*spacer;
 	char	**list, *elem;
 	const char *ps, *p;
 
 	// create an array of options (break source at \n)
-	list = (char **) malloc(sizeof(char *) * (128 + 1));
+	alloc = 128;
+	list = (char **) malloc(sizeof(char *) * (alloc + 1));
 	count = 0;
 	ps = p = source;
 	while ( *p ) {
@@ -349,8 +369,10 @@ static int cbm_popup_menu(const char *source, int defsel)
 			elem[p - ps] = '\0';
 			list[count] = elem;
 			count ++;
-			if ( (count % 128) == 0 )
-				list = (char **) realloc(list, sizeof(char *) * (count + 128 + 1));
+			if ( count == alloc ) {
+				alloc += 128;
+				list = (char **) realloc(list, sizeof(char *) * (alloc + 1));
+				}
 			ps = p + 1;
 			}
 		p ++;
@@ -359,10 +381,15 @@ static int cbm_popup_menu(const char *source, int defsel)
 		list[count] = strdup(ps);
 		count ++;
 		}
+	for ( i = count; i < alloc; i ++ )
+		list[i] = NULL;
 
 	// calculate the size and position
 	jed_get_screen_size(&rows, &cols);
-	for ( i = 0, maxc = 0; i < count; i ++ )
+	maxc = 0;
+	if ( title )	maxc = strlen(title) + 2;
+	if ( footer )	MAX(maxc, strlen(footer) + 2);
+	for ( i = 0; i < count; i ++ )
 		maxc = MAX(maxc, strlen(list[i]));
 
 	// calculate menu width, height and position
@@ -373,40 +400,56 @@ static int cbm_popup_menu(const char *source, int defsel)
 	menu_y = ((rows - menu_h) - 2) / 2;
 	menu_items = menu_h;
 
-	//
-	spacer = (char *) malloc(menu_w + 5);
-	memset(spacer, ' ', menu_w + 4);
-	spacer[menu_w + 4] = '\0';
-
 	// menu loop
 	selected  = 0;
 	start_pos = 0;
 	if ( defsel > 0 && defsel < count ) {
 		selected = defsel;
-		if ( selected > start_pos + menu_items )
-			start_pos = selected - menu_items;
+		PUM_FIX_SCROLL();
 		}
-	SLsmg_set_color(JMENU_POPUP_COLOR);
-	SLsmg_draw_box(menu_y - 1, menu_x - 2, menu_h + 2, menu_w + 4);
 	loop_exit = 0;
 	while ( loop_exit == 0 ) {
-		// draw menu
+		// draw static items...
+		// this was outside of the loop but needed for redraw
+		SLsmg_set_color(JMENU_POPUP_COLOR);
+		SLsmg_draw_box(menu_y - 1, menu_x - 2, menu_h + 2, menu_w + 4);
+		if ( title ) {
+			if ( *title ) {
+				SLsmg_draw_object(menu_y - 1, menu_x, SLSMG_RTEE_CHAR);
+				SLsmg_gotorc(menu_y - 1, menu_x + 1);
+				SLsmg_write_string((char *) title);
+				SLsmg_draw_object(menu_y - 1, menu_x + strlen(title) + 1, SLSMG_LTEE_CHAR);
+				}
+			}
+		if ( footer ) {
+			if ( *footer ) {
+				SLsmg_gotorc(menu_y + menu_h, menu_x + menu_w - strlen(footer));
+				SLsmg_write_string((char *) footer);
+				}
+			}
 		for ( i = 0; i < menu_items; i ++ ) {
 			SLsmg_gotorc(menu_y + i, menu_x - 1);
+			SLsmg_write_nstring(NULL, menu_w + 2);
+			}
+
+		// draw menu
+		for ( i = 0; i < menu_items; i ++ ) {
 			if ( i + start_pos == selected )
 				SLsmg_set_color(JMENU_SELECTION_COLOR);
 			else
 				SLsmg_set_color(JMENU_POPUP_COLOR);
-			SLsmg_write_nstring(spacer, menu_w + 2);
 			SLsmg_gotorc(menu_y + i, menu_x);
 			if ( start_pos + i < count )
 				SLsmg_write_nstring(list[start_pos + i], menu_w);
+			else
+				SLsmg_write_nstring(NULL, menu_w);
 			}
 		SLsmg_set_color(JNORMAL_COLOR);
  		SLsmg_refresh();
 
 		// get key
-		switch ( cbm_getkey() ) {
+		key = cbm_getkey();
+		switch ( key ) {
 		case 0x201: // up
 			if ( selected > 0 ) {
 				selected --;
@@ -416,18 +459,14 @@ static int cbm_popup_menu(const char *source, int defsel)
 			break;
 		case 0x202: // down
 			selected ++;
- 			if ( selected >= count )
- 				selected = count - 1;
-			if ( selected >= start_pos + menu_items )
-				start_pos = (selected+1) - menu_items;
+			PUM_FIX_SCROLL();
 			break;
 		case 0x205: // home
 			selected = start_pos = 0;
 			break;
 		case 0x206: // end
 			selected = count - 1;
-			if ( selected >= start_pos + menu_items )
-				start_pos = (selected+1) - menu_items;
+			PUM_FIX_SCROLL();
 			break;
 		case 0x207: // pgup
  			selected -= menu_items;
@@ -437,22 +476,50 @@ static int cbm_popup_menu(const char *source, int defsel)
 			break; 
 		case 0x208: // pgdn
  			selected += menu_items;
- 			if ( selected >= count )
- 				selected = count - 1;
-			if ( selected >= start_pos + menu_items )
-				start_pos = (selected+1) - menu_items;
+			PUM_FIX_SCROLL();
+			break;
+		case 0x20A: case 'd': case 'D': // delete
+			if ( flags & 0x01 ) {
+				if ( hook ) {
+					int r = hook(hookpar, selected, 'd', key);
+					if ( r < 0 ) {
+						selected = r;
+						goto pum_exit;
+						}
+					}
+				free(list[selected]);
+				list[selected] = NULL;
+				count --;
+	 			if ( selected < count ) {
+					for ( i = selected; i < count; i ++ )
+						list[i] = list[i+1];
+					list[count] = NULL;
+					}
+				PUM_FIX_SCROLL();
+				}
 			break;
 		case 0x0D: // ENTER (select)
+			if ( hook )
+				hook(hookpar, selected, 's', key);
  			loop_exit ++;
 			break;
 		case 0x1B: case -1: case 'q': case 'Q': // cancel
 			selected = -1;
 			loop_exit ++;
 			break;
+		default:
+			if ( hook ) {
+				int r = hook(hookpar, selected, 'k', key);
+				if ( r < 0 ) {
+					selected = r;
+					goto pum_exit;
+					}
+				}
 			}
 		} // while
 
-	free(spacer);
+	// cleanup and return
+pum_exit:
 	for ( i = 0; i < count; i ++ )
 		free(list[i]);
 	free(list);
@@ -461,7 +528,34 @@ static int cbm_popup_menu(const char *source, int defsel)
 
 // interface for S-Lang
 static int cbm_popup_menu_sl(const char *source, int *defsel)
-{ return cbm_popup_menu(source, *defsel); }
+{ return cbm_popup_menu(0, source, *defsel, NULL, NULL, NULL, NULL); }
+
+// interface for S-Lang
+int pum_hook(const char *slfunc, int item, int code, int key)
+{
+	SLang_Name_Type *slhook = NULL;
+	int	rv = 0;
+	
+	if ( *slfunc )
+		slhook = SLang_get_function((char *)slfunc);
+	else
+		slhook = NULL;
+	if ( slhook ) {
+		SLang_push_integer(item);
+		SLang_push_integer(code);
+		SLang_push_integer(key);
+		SLexecute_function(slhook);
+		if (SLang_get_error () == 0) SLang_pop_integer(&rv);
+		}
+	return rv;
+}
+
+static int cbm_popup_menu5_sl(int *flags, const char *source, int *defsel, const char *title, const char *footer, const char *hookfunc)
+{
+	if ( *hookfunc )
+		return cbm_popup_menu(*flags, source, *defsel, title, footer, pum_hook, hookfunc);
+	return cbm_popup_menu(*flags, source, *defsel, title, footer, NULL, NULL);
+}
 
 /*
  * setup S-Lang interface
@@ -478,7 +572,8 @@ static SLang_Intrin_Fun_Type CBRIEF_Intrinsics [] = {
 	MAKE_INTRINSIC_0("screen_height", cbm_scr_height, INT_TYPE),
 	MAKE_INTRINSIC_0("cgetkey",     cbm_getkey,        INT_TYPE),
 	MAKE_INTRINSIC_SI("popup_menu", cbm_popup_menu_sl, INT_TYPE),
-	MAKE_INTRINSIC_SI("msgbox",     cbm_msgbox_sl,     INT_TYPE),
+	MAKE_INTRINSIC_6("popup_menu5", cbm_popup_menu5_sl, INT_TYPE, INT_TYPE, STRING_TYPE, INT_TYPE, STRING_TYPE, STRING_TYPE, STRING_TYPE),
+	MAKE_INTRINSIC_SSI("msgbox",    cbm_msgbox_sl,     INT_TYPE),
 	SLANG_END_INTRIN_FUN_TABLE
 	};
 
