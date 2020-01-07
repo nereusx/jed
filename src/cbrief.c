@@ -326,7 +326,9 @@ static int cbm_msgbox_sl(char *msg, int *flags)
 { return cbm_msgbox(*flags, "%s", msg); }
 
 // popup menu
-// returns the selected item or -1
+// the 'source' is the list of items separated by '\n'
+// the 'defsel' is the preselected item (default is 0)
+// returns the index of the selected item or -1 for cancel
 static int cbm_popup_menu(const char *source, int defsel)
 {
 	int 	count, maxc, start_pos = 0, selected = 0;
@@ -405,45 +407,45 @@ static int cbm_popup_menu(const char *source, int defsel)
 
 		// get key
 		switch ( cbm_getkey() ) {
-		case 0x201:
+		case 0x201: // up
 			if ( selected > 0 ) {
 				selected --;
 				if ( start_pos > selected )
 					start_pos = selected;
 				}
 			break;
-		case 0x202:
-			if ( selected < count - 1 ) {
-				selected ++;
-				if ( start_pos + menu_items < selected )
-					start_pos = selected - menu_items;
-				}
+		case 0x202: // down
+			selected ++;
+ 			if ( selected >= count )
+ 				selected = count - 1;
+			if ( selected >= start_pos + menu_items )
+				start_pos = (selected+1) - menu_items;
 			break;
-		case 0x205:
+		case 0x205: // home
 			selected = start_pos = 0;
 			break;
-		case 0x206:
+		case 0x206: // end
 			selected = count - 1;
-			if ( selected > start_pos + menu_items )
-				start_pos = selected - menu_items;
+			if ( selected >= start_pos + menu_items )
+				start_pos = (selected+1) - menu_items;
 			break;
-		case 0x207:
+		case 0x207: // pgup
  			selected -= menu_items;
  			if ( selected < 0 ) selected = 0;
  			start_pos -= menu_items;
 			if ( start_pos < 0 ) start_pos = 0;
 			break; 
-		case 0x208:
+		case 0x208: // pgdn
  			selected += menu_items;
  			if ( selected >= count )
  				selected = count - 1;
-			if ( selected > start_pos + menu_items )
-				start_pos = selected - menu_items;
+			if ( selected >= start_pos + menu_items )
+				start_pos = (selected+1) - menu_items;
 			break;
-		case 0x0D:
+		case 0x0D: // ENTER (select)
  			loop_exit ++;
 			break;
-		case 0x1B: case -1: case 'q': case 'Q':
+		case 0x1B: case -1: case 'q': case 'Q': // cancel
 			selected = -1;
 			loop_exit ++;
 			break;
