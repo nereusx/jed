@@ -18,4 +18,7 @@
     <note priority="medium" time="1577729942">
         fix copy/paste in X (now it is using xclip)
     </note>
+    <note priority="medium" time="1578366811">
+        add keys to popup with callback
+    </note>
 </todo>

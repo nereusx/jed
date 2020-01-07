@@ -1681,6 +1681,7 @@ void jed_load_buffer (char *ns) /*{{{*/
 static SLang_Name_Type *Expand_File_Hook;
 void set_expansion_hook (char *s) /*{{{*/
 {
+	if ( s[0] == '\0' ) { Expand_File_Hook = NULL; return; } // ndc: 2020-01 reset
    if (NULL == (Expand_File_Hook = SLang_get_function (s)))
      {
 	msg_error ("The expansion hook has not been defined.");
