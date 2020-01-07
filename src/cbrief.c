@@ -238,7 +238,7 @@ int cbm_inq_debug()
 }
 
 // msgbox
-static int cbm_msgbox(int flags, const char *title, const char *fmt, ...)
+int cbm_msgbox(int flags, const char *title, const char *fmt, ...)
 {
 	char	*msg = (char *) malloc(BUFSZ);
 	int		rows, cols, x, y, w, h, i, count, maxc, rv, alloc;
@@ -332,7 +332,7 @@ static int cbm_msgbox(int flags, const char *title, const char *fmt, ...)
 }
 
 // interface for S-Lang
-static int cbm_msgbox_sl(const char *title, const char *msg, int *flags)
+int cbm_msgbox_sl(const char *title, const char *msg, int *flags)
 { return cbm_msgbox(*flags, title, "%s", msg); }
 
 // popup menu
@@ -347,7 +347,7 @@ static int cbm_msgbox_sl(const char *title, const char *msg, int *flags)
 		if ( selected >= start_pos + menu_items ) start_pos = (selected+1) - menu_items;\
 		}
 
-static int cbm_popup_menu(int flags, const char *source, int defsel,
+int cbm_popup_menu(int flags, const char *source, int defsel,
 				const char *title, const char *footer,
 				int (*hook)(const char*,int,int,int), const char *hookpar)
 {
@@ -527,7 +527,7 @@ pum_exit:
 }
 
 // interface for S-Lang
-static int cbm_popup_menu_sl(const char *source, int *defsel)
+int cbm_popup_menu_sl(const char *source, int *defsel)
 { return cbm_popup_menu(0, source, *defsel, NULL, NULL, NULL, NULL); }
 
 // interface for S-Lang
@@ -550,7 +550,7 @@ int pum_hook(const char *slfunc, int item, int code, int key)
 	return rv;
 }
 
-static int cbm_popup_menu5_sl(int *flags, const char *source, int *defsel, const char *title, const char *footer, const char *hookfunc)
+int cbm_popup_menu5_sl(int *flags, const char *source, int *defsel, const char *title, const char *footer, const char *hookfunc)
 {
 	if ( *hookfunc )
 		return cbm_popup_menu(*flags, source, *defsel, title, footer, pum_hook, hookfunc);
