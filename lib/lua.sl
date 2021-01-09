@@ -481,11 +481,11 @@ define lua_mode ()
 {
    variable lua = "Lua";
 
-   TAB = 8;
+%   TAB = 8;
    set_mode (lua, 0x4); % flag value of 4 is generic language mode
    use_keymap(lua);
-   set_buffer_hook ("indent_hook", "lua_indent_line");
-   set_buffer_hook ("newline_indent_hook", "lua_newline_and_indent");
+%   set_buffer_hook ("indent_hook", "lua_indent_line");
+%   set_buffer_hook ("newline_indent_hook", "lua_newline_and_indent");
    use_syntax_table (lua);
    run_mode_hooks ("lua_mode_hook");
 }
